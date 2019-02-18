@@ -13,7 +13,7 @@ suck (and have bugs).
 Simply configure config.h and execute:
 > $ make server
 
-## Testing ##
+## Testing (WIP Current Plan) ##
 To test the server, build the test program via:
 > $ make tester
 
