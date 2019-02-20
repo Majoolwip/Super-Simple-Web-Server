@@ -11,11 +11,16 @@ suck (and have bugs).
 
 ## Build ##
 Simply configure config.h and execute:
-> $ make server
+> $ make production
+
+To get an optimized build and execute:
+> $ make debug
+
+to make a non-optimized build
 
 ## Testing (WIP Current Plan) ##
 To test the server, build the test program via:
-> $ make tester
+> $ make test
 
 This will make a program that will search your web-server's directory and send
 get requests for every file and directory to make sure it returns only what you
