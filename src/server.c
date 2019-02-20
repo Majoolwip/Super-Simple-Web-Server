@@ -74,7 +74,7 @@ void serve_client(int socket_fd, FILE* log_file, int connection_num)
   buffer[read_size] = 0;
 
   /* Only get request allowed */
-  if (strncmp(buffer, "GET ", 4) != 0 && strncmp(buffer, "get ", 4) != 0) {
+  if (strncasecmp(buffer, "GET ", 4) != 0) {
     write_to_log(log_file, WARN, "Client tried to use a non-get request!", connection_num);
     send_error(socket_fd, NON_GET);
   }
