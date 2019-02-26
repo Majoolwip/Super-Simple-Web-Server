@@ -15,8 +15,10 @@ const char* get_content_type(const char* request)
   int length = strlen(request);
   for (int i = 0; extensions[i].extension != 0; i++) {
     ext_length = strlen(extensions[i].extension);
-    if (strncmp(&request[length - ext_length], extensions[i].extension, ext_length) == 0) {
-      return extensions[i].content_type;
+    if (ext_length < length) {
+      if (strncmp(&request[length - ext_length], extensions[i].extension, ext_length) == 0) {
+        return extensions[i].content_type;
+      }
     }
   }
   return (char*)0;
@@ -39,18 +41,9 @@ void write_to_log(FILE* file, enum log_type type, const char* message, int conne
   (void)fflush(file);
 }
 
-void send_error(int socket_fd, enum error_type err)
+void send_error(int socket_fd)
 {
-  switch(err) {
-  case FOUR_ZERO_FOUR:
-    (void)write(socket_fd, HTTP10_404, strlen(HTTP10_404)); break;
-  case NON_GET:
-    (void)write(socket_fd, HTTP10_NON_GET, strlen(HTTP10_NON_GET)); break;
-  case USED_PARENT:
-    (void)write(socket_fd, HTTP10_USED_PARENT, strlen(HTTP10_USED_PARENT)); break;
-  case INVALID_CONTENT_TYPE:
-    (void)write(socket_fd, HTTP10_INVALID_CONTENT_TYPE, strlen(HTTP10_INVALID_CONTENT_TYPE)); break;
-  }
+  (void)write(socket_fd, HTTP10_404, strlen(HTTP10_404));
   sleep(1);
   exit(-1);
 }
@@ -69,14 +62,14 @@ void serve_client(int socket_fd, FILE* log_file, int connection_num)
   /* Read clients requests */
   if ((read_size = read(socket_fd, buffer, BUFFER_SIZE)) < 1) {
     write_to_log(log_file, WARN, "Unable to read client's request!", connection_num);
-    send_error(socket_fd, FOUR_ZERO_FOUR);
+    send_error(socket_fd);
   }
   buffer[read_size] = 0;
 
   /* Only get request allowed */
   if (strncasecmp(buffer, "GET ", 4) != 0) {
     write_to_log(log_file, WARN, "Client tried to use a non-get request!", connection_num);
-    send_error(socket_fd, NON_GET);
+    send_error(socket_fd);
   }
 
   /* End buffer after second word */
@@ -91,7 +84,7 @@ void serve_client(int socket_fd, FILE* log_file, int connection_num)
   for (j = 0; j < i - 1; j++) {
     if (buffer[j] == '.' && buffer[j + 1] == '.') {
       write_to_log(log_file, WARN, "Client tried to use parent directory!", connection_num);
-      send_error(socket_fd, USED_PARENT);
+      send_error(socket_fd);
     }
   }
 
@@ -105,19 +98,19 @@ void serve_client(int socket_fd, FILE* log_file, int connection_num)
 
   if (content_type == 0) {
     write_to_log(log_file, WARN, "Client tried to get a non-supported extension type!", connection_num);
-    send_error(socket_fd, FOUR_ZERO_FOUR);
+    send_error(socket_fd);
   }
 
   file = fopen(&buffer[5], "r");
   if (file == NULL) {
     write_to_log(log_file, WARN, "Client tried to get a non-existent file!", connection_num);
-    send_error(socket_fd, FOUR_ZERO_FOUR);
+    send_error(socket_fd);
   }
 
   write_to_log(log_file, INFO, buffer, connection_num);
-  fseek(file, 0L, SEEK_END);
+  fseek(file, 0, SEEK_END);
   file_length = ftell(file);
-  fseek(file, 0L, SEEK_SET);
+  fseek(file, 0, SEEK_SET);
 
   /* Write Header of Response */
   (void)sprintf(buffer, HTTP10_OK_HEADER, content_type, file_length);
