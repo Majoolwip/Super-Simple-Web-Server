@@ -1,0 +1,3 @@
+[submodule "libs/Simple-Web-Minimizer"]
+	path = libs/Simple-Web-Minimizer
+	url = https://github.com/Majoolwip/Simple-Web-Minimizer
