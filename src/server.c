@@ -8,7 +8,7 @@
 #include <netinet/in.h>
 #include "server.h"
 #include "config.h"
-
+#include "web_minimizer.h"
 const char* get_content_type(const char* request)
 {
   int ext_length;
@@ -108,22 +108,30 @@ void serve_client(int socket_fd, FILE* log_file, int connection_num)
   }
 
   write_to_log(log_file, INFO, buffer, connection_num);
-  fseek(file, 0, SEEK_END);
+  (void)fseek(file, 0, SEEK_END);
   file_length = ftell(file);
-  fseek(file, 0, SEEK_SET);
+  (void)fseek(file, 0, SEEK_SET);
+
+  char* file_input = malloc(file_length);
+  (void)fread(file_input, 1, file_length, file);
+
+  if (strcmp(content_type, "text/html") == 0) {
+    file_length = minimize_html(file_input);
+  } else if (strcmp(content_type, "text/css") == 0) {
+    file_length = minimize_css(file_input);
+  } else if (strcmp(content_type, "text/javascript") == 0) {
+    file_length = minimize_js(file_input);
+  }
 
   /* Write Header of Response */
   (void)sprintf(buffer, HTTP10_OK_HEADER, content_type, file_length);
   (void)write(socket_fd, buffer, strlen(buffer));
-
-  /* Read and write data to the client from the file */
-  while (read_size = fread(buffer, 1, BUFFER_SIZE, file)) {
-    (void)write(socket_fd, buffer, read_size);
-  }
+  (void)write(socket_fd, file_input, file_length);
 
   /* Close and sleep for a bit to flush buffers */
-  fclose(file);
-  fclose(log_file);
+  (void)fclose(file);
+  (void)fclose(log_file);
+  free(file_input);
   sleep(1);
   exit(1);
 }
